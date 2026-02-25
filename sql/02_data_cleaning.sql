@@ -1,35 +1,28 @@
--- Create dimension tables
+-- Create cleaned table
 
-CREATE TABLE customers AS
-SELECT DISTINCT
-    CustomerID AS customer_id,
-    province
-FROM retail_clean;
+CREATE TABLE retail_clean AS
+SELECT *
+FROM raw_retail
+WHERE Quantity > 0
+  AND CustomerID IS NOT NULL;
 
-CREATE TABLE products AS
-SELECT DISTINCT
-    StockCode AS product_id,
-    Description,
-    UnitPrice
-FROM retail_clean;
+-- Add province column
 
--- Create fact table (orders)
+ALTER TABLE retail_clean
+ADD COLUMN province VARCHAR(50);
 
-CREATE TABLE orders AS
-SELECT 
-    InvoiceNo AS order_id,
-    MIN(CustomerID) AS customer_id,
-    MIN(InvoiceDate) AS invoicedate,
-    MIN(province) AS province
-FROM retail_clean
-GROUP BY InvoiceNo;
+-- Simulate Canadian provinces
 
--- Create order_items fact details
-
-CREATE TABLE order_items AS
-SELECT
-    InvoiceNo AS order_id,
-    StockCode AS product_id,
-    Quantity,
-    UnitPrice
-FROM retail_clean;
+UPDATE retail_clean
+SET province = CASE 
+    WHEN MOD(ABS(HASHTEXT(CustomerID)), 10) = 0 THEN 'Ontario'
+    WHEN MOD(ABS(HASHTEXT(CustomerID)), 10) = 1 THEN 'British Columbia'
+    WHEN MOD(ABS(HASHTEXT(CustomerID)), 10) = 2 THEN 'Quebec'
+    WHEN MOD(ABS(HASHTEXT(CustomerID)), 10) = 3 THEN 'Alberta'
+    WHEN MOD(ABS(HASHTEXT(CustomerID)), 10) = 4 THEN 'Manitoba'
+    WHEN MOD(ABS(HASHTEXT(CustomerID)), 10) = 5 THEN 'Saskatchewan'
+    WHEN MOD(ABS(HASHTEXT(CustomerID)), 10) = 6 THEN 'Nova Scotia'
+    WHEN MOD(ABS(HASHTEXT(CustomerID)), 10) = 7 THEN 'New Brunswick'
+    WHEN MOD(ABS(HASHTEXT(CustomerID)), 10) = 8 THEN 'Newfoundland'
+    ELSE 'Prince Edward Island'
+END;
